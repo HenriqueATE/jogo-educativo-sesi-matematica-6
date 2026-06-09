@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desafio das Frações - Quiz Individual</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --warning: #ea580c;
+            --bg: #f8fafc;
+            --dark: #1e293b;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            justify-content: center;
+        }
+        .container {
+            max-width: 650px;
+            width: 100%;
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+            box-sizing: border-box;
+        }
+        h1 { text-align: center; color: var(--primary); margin-top: 0; font-size: 1.6rem; }
+        
+        /* Painel de Pontos */
+        .score-panel {
+            display: flex;
+            justify-content: space-between;
+            background: #f1f5f9;
+            padding: 12px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: var(--dark);
+        }
+        .score-value { color: var(--primary); }
+
+        /* Cabeçalho da Questão */
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+        .level-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            color: white;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+        .badge-facil { background-color: var(--success); }
+        .badge-medio { background-color: var(--warning); }
+        .badge-desafio { background-color: #d97706; }
+        .badge-expert { background-color: var(--danger); }
+
+        /* Questão e Alternativas */
+        .question { font-size: 1.2rem; font-weight: 600; margin-bottom: 20px; color: var(--dark); line-height: 1.4; }
+        .options-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+        .option-btn {
+            background: #fff;
+            border: 2px solid #e2e8f0;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 1rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--dark);
+        }
+        .option-btn:hover { background: #f8fafc; border-color: #cbd5e0; }
+        
+        /* Feedback visual */
+        .correct { background-color: #dcfce7 !important; border-color: #22c55e !important; color: #14532d; font-weight: bold; }
+        .incorrect { background-color: #fee2e2 !important; border-color: #ef4444 !important; color: #7f1d1d; }
+
+        /* Controles */
+        .controls { display: flex; justify-content: flex-end; margin-top: 20px; }
+        .btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+            background-color: var(--primary);
+            transition: background 0.2s;
+        }
+        .btn:hover { background-color: #4338ca; }
+        .btn:disabled { background-color: #cbd5e0; cursor: not-allowed; }
+        
+        /* Tela de Resultados */
+        .end-screen { text-align: center; padding: 20px 0; }
+        .final-score { font-size: 3rem; font-weight: 800; color: var(--primary); margin: 15px 0; }
+        .performance-msg { font-size: 1.2rem; color: #475569; margin-bottom: 25px; font-weight: 500; line-height: 1.4; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="game-container">
+        <h1>⚡ Desafio das Frações</h1>
+        
+        <div class="score-panel">
+            <span>Sua Pontuação: <span id="live-score" class="score-value">0</span> pts</span>
+            <span id="question-counter">Progresso: 1/40</span>
+        </div>
+
+        <div id="quiz-area">
+            <div class="quiz-header">
+                <span id="points-worth">Vale 10 pontos</span>
+                <span id="level-space"></span>
+            </div>
+            <div class="question" id="question-text">Carregando pergunta...</div>
+            <div class="options-grid" id="options-container"></div>
+            
+            <div class="controls">
+                <button class="btn" id="next-btn" onclick="nextQuestion()" disabled>Avançar ➜</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="end-area" class="end-screen" style="display: none;">
+        <h1>🎉 Desafio Concluído!</h1>
+        <p>Você completou todas as 40 questões. Veja o seu resultado:</p>
+        <div class="final-score"><span id="final-pts">0</span></div>
+        <p style="font-size: 1.1rem; color: #64748b; margin-top: 0;" id="accuracy-text">Acertos: 0 de 40</p>
+        <div class="performance-msg" id="performance-text"></div>
+        <button class="btn" onclick="resetGame()">Jogar Novamente</button>
+    </div>
+</div>
+
+<script>
+    // As 40 perguntas do banco de dados
+    const questions = [
+        // FÁCIL (1-10)
+        { q: "Uma barra de chocolate tem 6 pedaços. Se eu comer 2 pedaços, qual fração representa o que eu comi?", o: ["6/2", "2/6", "1/6", "4/6"], c: 1, p: 10, l: "Fácil" },
+        { q: "Na fração 3/7, como é chamado o número 7?", o: ["Numerador", "Divisor", "Denominador", "Parcela"], c: 2, p: 10, l: "Fácil" },
+        { q: "Como lemos a fração 5/10?", o: ["Cinco dez avos", "Cinco décimos", "Cinco sobre dez", "Cinco décimas partes"], c: 1, p: 10, l: "Fácil" },
+        { q: "Se uma pizza foi dividida em 4 partes iguais e comemos 3 partes, qual fração representa a parte que SOBROU?", o: ["3/4", "1/4", "4/3", "2/4"], c: 1, p: 10, l: "Fácil" },
+        { q: "Qual das frações abaixo representa a METADE de um inteiro?", o: ["1/3", "2/2", "1/2", "1/4"], c: 2, p: 10, l: "Fácil" },
+        { q: "Em uma caixa com 10 ovos, 3 estão quebrados. Qual fração representa os ovos intactos (bons)?", o: ["3/10", "7/10", "10/7", "5/10"], c: 1, p: 10, l: "Fácil" },
+        { q: "O que o numerador de uma fração indica?", o: ["O número de partes em que o inteiro foi dividido.", "O resultado final da soma.", "O número de partes que foram tomadas/consideradas do inteiro.", "Quantos inteiros nós temos."], c: 2, p: 10, l: "Fácil" },
+        { q: "Como se lê a fração 7/12?", o: ["Sete doze avos", "Sete doze", "Sete duodécimos", "Doze sete avos"], c: 0, p: 10, l: "Fácil" },
+        { q: "Se dividirmos uma folha de papel em 8 partes e pintarmos as 8 partes, qual fração temos?", o: ["1/8", "8/1", "8/8", "0/8"], c: 2, p: 10, l: "Fácil" },
+        { q: "Qual fração representa 'três quintos'?", o: ["5/3", "3/5", "3/15", "1/35"], c: 1, p: 10, l: "Fácil" },
+        // MÉDIO (11-20)
+        { q: "Como classificamos a fração 8/5?", o: ["Própria", "Imprópria", "Aparente", "Nula"], c: 1, p: 20, l: "Médio" },
+        { q: "Qual das seguintes frações é APARENTE (representa um número inteiro oculto)?", o: ["2/3", "5/2", "12/4", "7/7"], c: 2, p: 20, l: "Médio" },
+        { q: "Qual das frações abaixo é EQUIVALENTE a 1/3?", o: ["2/6", "3/1", "2/3", "3/6"], c: 0, p: 20, l: "Médio" },
+        { q: "Simplificando a fração 10/15 pelo seu maior divisor comum, obtemos:", o: ["2/3", "5/5", "1/2", "5/3"], c: 0, p: 20, l: "Médio" },
+        { q: "Se multiplicarmos o numerador e o denominador de 2/5 por 4, qual fração equivalente encontramos?", o: ["8/5", "2/20", "8/20", "6/9"], c: 2, p: 20, l: "Médio" },
+        { q: "Uma fração própria é aquela onde:", o: ["O numerador é igual ao denominador.", "O numerador é menor que o denominador.", "O numerador é maior que o denominador.", "O denominador é igual a zero."], c: 1, p: 20, l: "Médio" },
+        { q: "A fração 20/5 equivale a qual número inteiro?", o: ["2", "5", "4", "10"], c: 2, p: 20, l: "Médio" },
+        { q: "Qual das frações abaixo NÃO é equivalente a 1/2?", o: ["5/10", "4/8", "3/6", "2/5"], c: 3, p: 20, l: "Médio" },
+        { q: "Ao simplificar a fração 18/24 até torná-la irredutível, encontramos:", o: ["9/12", "3/4", "6/8", "1/2"], c: 1, p: 20, l: "Médio" },
+        { q: "Qual das alternativas apresenta uma fração IMPRÓPRIA?", o: ["4/9", "11/12", "9/4", "3/3"], c: 2, p: 20, l: "Médio" },
+        // DESAFIO (21-30)
+        { q: "Qual sinal substitui corretamente o espaço entre as frações: 4/7 ___ 6/7?", o: [">", "<", "=", "+"], c: 1, p: 30, l: "Desafio" },
+        { q: "Qual é o resultado da soma 2/9 + 5/9?", o: ["7/18", "10/9", "7/9", "3/9"], c: 2, p: 30, l: "Desafio" },
+        { q: "Se fizermos a subtração 15/20 - 7/20, qual será o resultado?", o: ["8/20", "8/0", "22/20", "1/2"], c: 0, p: 30, l: "Desafio" },
+        { q: "Quem é maior: 3/5 ou 3/8?", o: ["3/8 é maior.", "São iguais.", "3/5 é maior.", "Não dá para saber."], c: 2, p: 30, l: "Desafio" },
+        { q: "Qual é o resultado de 1 - 1/4 (um inteiro menos um quarto)?", o: ["0/4", "3/4", "1/4", "4/4"], c: 1, p: 30, l: "Desafio" },
+        { q: "Somando 1/5 + 2/5 + 2/5, obtemos uma fração aparente que vale quanto?", o: ["5", "5/15", "1", "0"], c: 2, p: 30, l: "Desafio" },
+        { q: "Duas frações têm o mesmo numerador (ex: 2/3 e 2/5). A maior fração será aquela que tiver:", o: ["O menor denominador.", "O maior denominador.", "O denominador igual a 10.", "Numeradores somados."], c: 0, p: 30, l: "Desafio" },
+        { q: "Se você somar 3/10 + 7/10, o resultado final simplificado é:", o: ["10/20", "1", "4/10", "10"], c: 1, p: 30, l: "Desafio" },
+        { q: "Qual das alternativas está em ordem CRESCENTE (do menor para o maior)?", o: ["1/5 < 3/5 < 4/5", "4/5 < 3/5 < 1/5", "3/5 < 1/5 < 4/5", "1/5 < 4/5 < 3/5"], c: 0, p: 30, l: "Desafio" },
+        { q: "Efetuando a operação 12/13 - 5/13, encontramos:", o: ["7/0", "17/13", "7/13", "1/13"], c: 2, p: 30, l: "Desafio" },
+        // EXPERT (31-40)
+        { q: "Em uma sala com 30 alunos, 1/3 deles joga futebol. Quantos alunos jogam futebol?", o: ["3 alunos", "10 alunos", "20 alunos", "15 alunos"], c: 1, p: 40, l: "Expert" },
+        { q: "Tenho 24 figurinhas. Dei 1/4 delas para o meu irmão. Com quantas figurinhas eu FIQUEI?", o: ["6 figurinhas", "12 figurinhas", "18 figurinhas", "20 figurinhas"], c: 2, p: 40, l: "Expert" },
+        { q: "Um relógio marca 60 minutos em uma hora. Quantos minutos correspondem a 3/4 de hora?", o: ["15 minutos", "30 minutos", "45 minutos", "50 minutos"], c: 2, p: 40, l: "Expert" },
+        { q: "Se 2/5 de um caminho equivalem a 20 km, qual é o comprimento TOTAL desse caminho?", o: ["40 km", "50 km", "10 km", "100 km"], c: 1, p: 40, l: "Expert" },
+        { q: "Uma cozinheira precisa de 1/2 xícara de açúcar. Se ela vai fazer o TRIPLO da receita, de quanto precisará?", o: ["3/2 xícaras", "3/6 xícaras", "3 xícaras", "1/6 xícara"], c: 0, p: 40, l: "Expert" },
+        { q: "Júlia comprou um livro de 80 páginas e já leu 2/8 dele. Quantas páginas ela leu?", o: ["10 páginas", "20 páginas", "40 páginas", "8 páginas"], c: 1, p: 40, l: "Expert" },
+        { q: "Um tanque de combustível tem capacidade para 40 litros. O ponteiro marca 1/5. Quantos litros há nele?", o: ["5 litros", "8 litros", "10 litros", "20 litros"], c: 1, p: 40, l: "Expert" },
+        { q: "Em uma quitanda há 12 maçãs. Se 2/3 delas estão maduras, quantas NÃO estão maduras?", o: ["8 maçãs", "4 maçãs", "6 maçãs", "3 maçãs"], c: 1, p: 40, l: "Expert" },
+        { q: "Um bolo foi dividido em 12 pedaços. Pedro comeu 1/4 e Maria 2/4. Que fração sobrou do bolo?", o: ["3/4", "1/4", "1/12", "3/12"], c: 1, p: 40, l: "Expert" },
+        { q: "Se um pacote tem 50 balas e você distribui 5/5 do pacote para seus amigos, com quantas ficou?", o: ["50 balas", "25 balas", "0 balas", "5 balas"], c: 2, p: 40, l: "Expert" }
+    ];
+
+    let currentIndex = 0;
+    let userScore = 0;
+    let correctAnswersCount = 0;
+    let answered = false;
+
+    function loadQuestion() {
+        answered = false;
+        document.getElementById("next-btn").disabled = true;
+
+        if (currentIndex >= questions.length) {
+            endGame();
+            return;
+        }
+
+        const qData = questions[currentIndex];
+        
+        // Atualiza cabeçalhos e progresso
+        document.getElementById("question-counter").innerText = `Progresso: ${currentIndex + 1}/${questions.length}`;
+        document.getElementById("points-worth").innerText = `Vale ${qData.p} pontos`;
+        
+        let lvlClass = qData.l.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        document.getElementById("level-space").innerHTML = `<span class="level-badge badge-${lvlClass}">${qData.l}</span>`;
+        
+        document.getElementById("question-text").innerText = qData.q;
+        
+        // Gera os botões de resposta
+        const container = document.getElementById("options-container");
+        container.innerHTML = "";
+        
+        qData.o.forEach((opt, idx) => {
+            const btn = document.createElement("button");
+            btn.className = "option-btn";
+            btn.innerText = opt;
+            btn.onclick = () => checkAnswer(idx, btn);
+            container.appendChild(btn);
+        });
+    }
+
+    function checkAnswer(selectedIdx, clickedBtn) {
+        if (answered) return;
+        answered = true;
+        
+        const qData = questions[currentIndex];
+        const buttons = document.querySelectorAll(".option-btn");
+        
+        if (selectedIdx === qData.c) {
+            clickedBtn.classList.add("correct");
+            userScore += qData.p;
+            correctAnswersCount++;
+            document.getElementById("live-score").innerText = userScore;
+        } else {
+            clickedBtn.classList.add("incorrect");
+            buttons[qData.c].classList.add("correct"); // Destaca a correta
+        }
+        
+        document.getElementById("next-btn").disabled = false;
+    }
+
+    function nextQuestion() {
+        currentIndex++;
+        loadQuestion();
+    }
+
+    function endGame() {
+        document.getElementById("game-container").style.display = "none";
+        document.getElementById("end-area").style.display = "block";
+        
+        document.getElementById("final-pts").innerText = `${userScore} pts`;
+        document.getElementById("accuracy-text").innerText = `Acertos: ${correctAnswersCount} de ${questions.length}`;
+        
+        // Mensagem customizada com base nos acertos
+        let performanceMsg = "";
+        if (correctAnswersCount === 40) {
+            performanceMsg = "👑 Gênio das Frações! Você acertou absolutamente tudo. Parabéns!";
+        } else if (correctAnswersCount >= 30) {
+            performanceMsg = "🚀 Excelente desempenho! Você domina muito bem os conceitos de frações.";
+        } else if (correctAnswersCount >= 20) {
+            performanceMsg = "👍 Bom trabalho! Você teve um bom aproveitamento, mas vale a pena revisar os pontos que errou.";
+        } else {
+            performanceMsg = "📚 Continue estudando! Frações exigem treino. Que tal tentar o desafio mais uma vez?";
+        }
+        
+        document.getElementById("performance-text").innerText = performanceMsg;
+    }
+
+    function resetGame() {
+        currentIndex = 0;
+        userScore = 0;
+        correctAnswersCount = 0;
+        document.getElementById("live-score").innerText = "0";
+        document.getElementById("game-container").style.display = "block";
+        document.getElementById("end-area").style.display = "none";
+        loadQuestion();
+    }
+
+    // Inicializa o quiz na primeira execução
+    loadQuestion();
+</script>
+</body>
+</html>
